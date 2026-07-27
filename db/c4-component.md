@@ -1,51 +1,58 @@
-C4Component
-    title C4 Component — recon-service API
+```mermaid
+flowchart LR
 
-    Container_Ext(reactSpa, "Recon UI", "React")
-    ContainerDb_Ext(postgres, "PostgreSQL")
-    ContainerQueue_Ext(kafka, "Kafka")
+UI[UI]
+subgraph API["recon-service API"]
 
-    Container_Boundary(api, "recon-service API") {
-        Component(authCtl, "AuthController", "Spring REST", "/api/auth/login, /refresh")
-        Component(tradeCtl, "TradeController", "Spring REST", "/api/v1/trades CRUD")
-        Component(reconCtl, "ReconController", "Spring REST", "/api/v1/recon/breaks")
-        Component(auditCtl, "AuditController", "Spring REST", "/api/v1/audit (read-only)")
+AuthController
+ReconController
+JobController
+ReportController
 
-        Component(jwtFilter, "JwtAuthFilter", "OncePerRequestFilter", "Parses + validates JWT, sets SecurityContext")
-        Component(rbac, "MethodSecurity", "@PreAuthorize", "Role gate per endpoint")
+JwtAuthFilter
+MethodSecurity
 
-        Component(tradeSvc, "TradeService", "@Service", "Trade lifecycle business rules")
-        Component(reconSvc, "ReconciliationService", "@Service", "Match + break detection")
-        Component(auditSvc, "AuditService", "@Service", "Writes audit_log via trigger or app-layer hook")
+ReconService
+JobService
+ReportService
 
-        Component(tradeRepo, "TradeRepository", "JpaRepository + Specs", "Paged + filtered queries")
-        Component(reconRepo, "ReconBreakRepository", "JpaRepository", "Break queries")
-        Component(auditRepo, "AuditRepository", "JpaRepository", "Read-only audit queries")
+ReconRepository
+JobRepository
+ReportRepository
 
-        Component(producer, "TradeEventProducer", "KafkaTemplate", "Publishes trade-events on commit")
-        Component(consumer, "ReconResultConsumer", "@KafkaListener", "Consumes recon-results from engine")
-    }
+KafkaProducer
+KafkaConsumer
 
-    Rel(reactSpa, authCtl, "POST /login", "HTTPS")
-    Rel(reactSpa, tradeCtl, "REST", "HTTPS + JWT")
-    Rel(reactSpa, reconCtl, "REST", "HTTPS + JWT")
-    Rel(reactSpa, auditCtl, "REST", "HTTPS + JWT")
+end
 
-    Rel(jwtFilter, rbac, "Sets SecurityContext")
-    Rel(tradeCtl, tradeSvc, "calls")
-    Rel(reconCtl, reconSvc, "calls")
-    Rel(auditCtl, auditSvc, "calls")
+Postgres[(PostgreSQL)]
+Kafka[(Kafka)]
 
-    Rel(tradeSvc, tradeRepo, "uses")
-    Rel(reconSvc, reconRepo, "uses")
-    Rel(auditSvc, auditRepo, "uses")
+UI --> AuthController
+UI --> ReconController
+UI --> JobController
+UI --> ReportController
 
-    Rel(tradeRepo, postgres, "JDBC")
-    Rel(reconRepo, postgres, "JDBC")
-    Rel(auditRepo, postgres, "JDBC")
+AuthController --> JwtAuthFilter
+JwtAuthFilter --> MethodSecurity
 
-    Rel(tradeSvc, producer, "emits event")
-    Rel(producer, kafka, "publish trade-events")
-    Rel(consumer, kafka, "subscribe recon-results")
-    Rel(consumer, reconSvc, "callback")
+ReconController --> ReconService
+JobController --> JobService
+ReportController --> ReportService
 
+ReconService --> ReconRepository
+JobService --> JobRepository
+ReportService --> ReportRespsitory
+
+ReconRepository --> Postgres
+JobRepository --> Postgres
+ReportRepository --> Postgres
+
+ReconService --> KafkaProducer
+JobService --> KafkaProducer
+
+KafkaProducer --> Kafka
+Kafka --> KafkaConsumer
+
+KafkaConsumer --> ReconService
+```
