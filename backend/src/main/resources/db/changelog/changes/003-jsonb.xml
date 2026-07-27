@@ -56,4 +56,81 @@
         <tagDatabase tag="release-1.1"/>
     </changeSet>
 
+   <!-- Pattern 1: Idempotent table creation (most common) -->
+   <changeSet id="011-mv-daily-recon-summary" author="trainer">
+       <preConditions onFail="MARK_RAN">
+           <not>
+               <tableExists tableName="mv_daily_recon_summary"/>
+           </not>
+       </preConditions>
+   
+       <sql>
+           CREATE MATERIALIZED VIEW mv_daily_recon_summary AS
+           SELECT t.trade_date, cp.region, i.asset_class,
+                  COUNT(*) AS total_trades
+           FROM trades t
+           JOIN counterparties cp ON cp.id = t.counterparty_id
+           JOIN instruments    i  ON i.id  = t.instrument_id
+           GROUP BY t.trade_date, cp.region, i.asset_class
+           WITH NO DATA;
+   
+           CREATE UNIQUE INDEX uq_mv_daily_recon_summary
+               ON mv_daily_recon_summary (trade_date, region, asset_class);
+       </sql>
+   
+       <rollback>
+           DROP MATERIALIZED VIEW IF EXISTS mv_daily_recon_summary;
+       </rollback>
+   </changeSet>
+   
+   <!-- Pattern 2: Composed precondition with column existence -->
+   <changeSet id="012-add-rating-column" author="trainer">
+       <preConditions onFail="CONTINUE">
+           <and>
+               <tableExists tableName="instruments"/>
+               <not><columnExists tableName="instruments" columnName="rating"/></not>
+           </and>
+       </preConditions>
+   
+       <addColumn tableName="instruments">
+           <column name="rating" type="VARCHAR(10)"/>
+       </addColumn>
+   
+       <rollback>
+           <dropColumn tableName="instruments" columnName="rating"/>
+       </rollback>
+   </changeSet>
+   
+   <!-- Pattern 3: Environment-gated seed data -->
+   <changeSet id="013-seed-test-data" author="trainer" context="dev,test">
+       <preConditions onFail="MARK_RAN">
+           <sqlCheck expectedResult="0">
+               SELECT COUNT(*) FROM counterparties
+           </sqlCheck>
+       </preConditions>
+   
+       <sqlFile path="db/changelog/data/seed-counterparties.sql"/>
+   
+       <rollback>
+           DELETE FROM counterparties;
+       </rollback>
+   </changeSet>
+   
+   <!-- Pattern 4: Database vendor gate -->
+   <changeSet id="014-postgres-only-tsvector" author="trainer">
+       <preConditions onFail="MARK_RAN">
+           <dbms type="postgresql"/>
+       </preConditions>
+   
+       <sql>
+           ALTER TABLE instruments ADD COLUMN search_vector TSVECTOR;
+           CREATE INDEX idx_instruments_search ON instruments USING GIN (search_vector);
+       </sql>
+   
+       <rollback>
+           DROP INDEX IF EXISTS idx_instruments_search;
+           ALTER TABLE instruments DROP COLUMN IF EXISTS search_vector;
+       </rollback>
+   </changeSet>
+
 </databaseChangeLog>
