@@ -30,4 +30,30 @@
         </rollback>
     </changeSet>
 
+    <!-- Per-changeset rollback for an SQL-passthrough change -->
+    <changeSet id="010-instruments-jsonb-metadata" author="trainer">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="instruments" columnName="metadata"/></not>
+        </preConditions>
+    
+        <sql>
+            ALTER TABLE instruments ADD COLUMN metadata JSONB NOT NULL DEFAULT '{}'::JSONB;
+            CREATE INDEX idx_instruments_metadata ON instruments USING GIN (metadata jsonb_path_ops);
+        </sql>
+    
+        <rollback>
+            DROP INDEX IF EXISTS idx_instruments_metadata;
+            ALTER TABLE instruments DROP COLUMN IF EXISTS metadata;
+        </rollback>
+    </changeSet>
+    
+    <!-- Tag release boundaries so we can roll back to a point as a unit -->
+    <changeSet id="tag-release-1-0" author="trainer">
+        <tagDatabase tag="release-1.0"/>
+    </changeSet>
+    
+    <changeSet id="tag-release-1-1" author="trainer">
+        <tagDatabase tag="release-1.1"/>
+    </changeSet>
+
 </databaseChangeLog>
