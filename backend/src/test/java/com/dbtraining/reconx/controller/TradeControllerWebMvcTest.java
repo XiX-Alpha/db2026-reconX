@@ -46,6 +46,14 @@ class TradeControllerWebMvcTest {
 
     @Test
     @WithMockUser(roles = "TRADER")
+
+    void testCreateTrade_unauthenticated_returns401() throws Exception {
+        mockMvc.perform(post("/api/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest())))
+                .andExpect(status().isUnauthorized());
+    }
+    
     void testCreateTrade_authenticated_returns201() throws Exception {
         // Field order matches the current TradeResponse record:
         // (id, tradeRef, instrumentId, instrumentSymbol, counterpartyId, counterpartyName,
