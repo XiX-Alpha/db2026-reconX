@@ -45,15 +45,25 @@ class TradeControllerWebMvcTest {
     }
 
     @Test
-    @WithMockUser(roles = "TRADER")
-
     void testCreateTrade_unauthenticated_returns401() throws Exception {
         mockMvc.perform(post("/api/v1/trades")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(validRequest())))
                 .andExpect(status().isUnauthorized());
     }
-    
+
+    @Test
+    @WithMockUser(roles = "VIEWER")
+    void testCreateTrade_viewerRole_returns403() throws Exception {
+        mockMvc.perform(post("/api/v1/trades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest()))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "TRADER")
     void testCreateTrade_authenticated_returns201() throws Exception {
         // Field order matches the current TradeResponse record:
         // (id, tradeRef, instrumentId, instrumentSymbol, counterpartyId, counterpartyName,
