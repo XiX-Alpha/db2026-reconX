@@ -44,38 +44,83 @@ ORDER BY
 --                -> recon_break -> resolution)
 -- ============================================================================
 WITH RECURSIVE trade_lifecycle AS (
-    -- anchor: every trade in its execution state
+
+    -- Base case: Execution
     SELECT
-        t.id           AS trade_id,
+        t.id AS trade_id,
         t.trade_ref,
-        1              AS step,
-        'EXECUTED'     AS state,
-        t.created_at   AS at_ts,
-        NULL::text     AS detail
+        1 AS stage,
+        'EXECUTION' AS stage_name,
+        t.trade_date AS event_at,
+        'COMPLETED' AS event_status
     FROM trades t
-    WHERE t.deleted_at IS NULL
 
     UNION ALL
 
-    -- recursive: each subsequent state derived from the previous step
+    -- Recursive step
     SELECT
         tl.trade_id,
         tl.trade_ref,
-        tl.step + 1,
-        CASE tl.step
-            WHEN 1 THEN 'CONFIRMED'
-            WHEN 2 THEN 'SETTLED'
-            WHEN 3 THEN 'RECONCILED'
-        END                                          AS state,
-        s.settlement_date::timestamp                  AS at_ts,
-        s.status                                      AS detail
+        tl.stage + 1,
+        next_event.stage_name,
+        next_event.event_at,
+        next_event.event_status
     FROM trade_lifecycle tl
-    JOIN settlements s ON s.trade_id = tl.trade_id
-    WHERE tl.step < 4
-)
-SELECT * FROM trade_lifecycle
-ORDER BY trade_id, step;
 
+    JOIN LATERAL (
+
+        SELECT
+            'CONFIRMATION' AS stage_name,
+            c.confirmed_at AS event_at,
+            c.status AS event_status
+        FROM confirmations c
+        WHERE tl.stage = 1
+          AND c.trade_id = tl.trade_id
+
+        UNION ALL
+
+        SELECT
+            'SETTLEMENT',
+            s.settled_at,
+            s.status
+        FROM settlements s
+        WHERE tl.stage = 2
+          AND s.trade_id = tl.trade_id
+
+        UNION ALL
+
+        SELECT
+            'RECON_BREAK',
+            rb.detected_at,
+            rb.status
+        FROM recon_breaks rb
+        WHERE tl.stage = 3
+          AND rb.trade_id = tl.trade_id
+
+        UNION ALL
+
+        SELECT
+            'RESOLUTION',
+            r.resolved_at,
+            r.status
+        FROM resolutions r
+        WHERE tl.stage = 4
+          AND r.trade_id = tl.trade_id
+
+    ) AS next_event ON TRUE
+
+    WHERE tl.stage < 5
+)
+
+SELECT
+    trade_id,
+    trade_ref,
+    stage,
+    stage_name,
+    event_at,
+    event_status
+FROM trade_lifecycle
+ORDER BY trade_id, stage;
 
 -- ============================================================================
 -- ADV008 — REFRESH the daily-summary materialised view (concurrent so it can
