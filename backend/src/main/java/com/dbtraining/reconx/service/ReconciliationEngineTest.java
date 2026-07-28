@@ -47,6 +47,11 @@ class ReconciliationEngineTest {
         assertThat(out.get(0).status()).isEqualTo(ReconResult.Status.MATCHED);
     }
 
+    @Test
+    void testReconcile_emptyInternal_returnsEmpty() {
+        assertThat(engine.reconcile(List.of(), List.of(), ReconciliationRule.EXACT)).isEmpty();
+    }
+
     private EquityTrade equity(String ref, String price, String qty) {
         return EquityTrade.builder()
                 .tradeRef(TradeRef.of(ref))
