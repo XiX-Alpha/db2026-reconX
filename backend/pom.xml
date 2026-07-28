@@ -34,11 +34,22 @@
 
     <properties>
         <java.version>25</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <mapstruct.version>1.6.2</mapstruct.version>
+        <lombok.version>1.18.34</lombok.version>
         <jjwt.version>0.12.6</jjwt.version>
         <testcontainers.version>1.20.3</testcontainers.version>
         <hypersistence.version>3.9.0</hypersistence.version>
     </properties>
+
+    <modules>
+        <module>common</module>
+        <module>domain</module>
+        <module>repository</module>
+        <module>service</module>
+        <module>api</module>
+    </modules>
 
     <dependencies>
         <!-- Web + Validation (ADV063-ADV071) -->
