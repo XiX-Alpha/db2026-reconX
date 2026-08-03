@@ -86,24 +86,31 @@
       }
     },
     {
-      "type": "timeseries",
-      "title": "Trades created / sec (ADV089)",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "reconx-prometheus"
-      },
-      "targets": [
-        {
-          "expr": "sum(rate(trade_created_total[1m]))"
-        }
-      ],
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 6,
-        "y": 8
-      }
+  "type": "timeseries",
+  "title": "Trades created / sec (ADV089)",
+  "datasource": {
+    "type": "prometheus",
+    "uid": "reconx-prometheus"
+  },
+  "targets": [
+    {
+      "expr": "sum(rate(trade_created_total[1m]))",
+      "legendFormat": "Trades created /s"
+    }
+  ],
+  "fieldConfig": {
+    "defaults": {
+      "unit": "trades/s"
     },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 6,
+    "y": 8
+  }
+},
     {
       "type": "timeseries",
       "title": "Reconciliation duration histogram (ADV090)",
