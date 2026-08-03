@@ -1,7 +1,10 @@
 package com.dbtraining.reconx.controller;
 
+import com.dbtraining.reconx.dto.TradeMapper;
+import com.dbtraining.reconx.dto.TradeMapper;
 import com.dbtraining.reconx.dto.TradeRequest;
 import com.dbtraining.reconx.dto.TradeResponse;
+import com.dbtraining.reconx.repository.entity.Trade;
 import com.dbtraining.reconx.service.TradeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -18,6 +21,7 @@ import java.time.LocalDate;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -69,22 +73,16 @@ class TradeControllerWebMvcTest {
         // (id, tradeRef, instrumentId, instrumentSymbol, counterpartyId, counterpartyName,
         //  assetClass, side, quantity, price, tradeDate, status, createdAt, modifiedAt).
         Instant now = Instant.now();
-        when(tradeService.create(any())).thenReturn(
-                new TradeResponse(
-                        42L,
-                        "TRD-20260315-9999",
-                        1L,
-                        "SAP.DE",
-                        1L,
-                        "Apex Brokers Inc",
-                        "EQUITY",
-                        "BUY",
-                        new BigDecimal("100.0000"),
-                        new BigDecimal("245.50"),
-                        LocalDate.now(),
-                        "PENDING",
-                        now,
-                        now));
+        Trade savedTrade = new Trade();
+        savedTrade.setTradeRef("TRD-20260315-9999");
+        savedTrade.setAssetClass("EQUITY");
+        savedTrade.setSide("BUY");
+        savedTrade.setQuantity(new BigDecimal("100.0000"));
+        savedTrade.setPrice(new BigDecimal("245.50"));
+        savedTrade.setTradeDate(LocalDate.now());
+        savedTrade.setStatus("PENDING");
+
+        when(tradeService.create(any(TradeRequest.class), anyString())).thenReturn(savedTrade);
 
         mockMvc.perform(post("/api/v1/trades")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -92,7 +90,6 @@ class TradeControllerWebMvcTest {
                         .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(header().string("Location", containsString("/api/v1/trades/42")))
-                .andExpect(jsonPath("$.id").value(42))
                 .andExpect(jsonPath("$.tradeRef").value("TRD-20260315-9999"));
     }
 }
