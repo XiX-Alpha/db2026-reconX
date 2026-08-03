@@ -120,6 +120,28 @@
     "y": 8
   }
 },
+{
+  "type": "piechart",
+  "title": "Trades by status (ADV092)",
+  "datasource": {
+    "type": "prometheus",
+    "uid": "reconx-prometheus"
+  },
+  "targets": [
+    {
+      "expr": "sum by (status) (trades_by_status)",
+      "legendFormat": "{{status}}"
+    }
+  ],
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 8
+  }
+}
+,
+    
     {
   "type": "timeseries",
   "title": "Trades created / sec (ADV089)",
