@@ -78,13 +78,14 @@ management:
       show-details: when_authorized
       probes:
         enabled: true
-  metrics:
+   metrics:
     distribution:
       percentiles-histogram:
         http.server.requests: true
         reconciliation.duration: true
       percentiles:
         http.server.requests: 0.5, 0.95, 0.99
+        reconciliation.duration: 0.5, 0.95, 0.99
     tags:
       application: ${spring.application.name}
 
