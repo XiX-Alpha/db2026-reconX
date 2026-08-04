@@ -27,6 +27,7 @@ public class KafkaErrorHandlerConfig {
                 (ConsumerRecord<?, ?> rec, Exception ex) ->
                         new TopicPartition(rec.topic() + "-dlq", rec.partition())
         );
+        // 1s, 2s, 4s — three attempts total, then DLQ.
         ExponentialBackOff backoff = new ExponentialBackOff(1000L, 2.0);
         backoff.setMaxAttempts(3);
         return new DefaultErrorHandler(recoverer, backoff);
